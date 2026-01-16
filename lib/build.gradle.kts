@@ -13,7 +13,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("Main")
+    mainClass.set("ui.Main")
 }
 
 java {

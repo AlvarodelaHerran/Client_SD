@@ -38,7 +38,7 @@ public class PlantServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Unauthorized - Invalid token");
         }
 
         if (response.statusCode() == 204) {
@@ -46,7 +46,7 @@ public class PlantServiceClient {
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la récupération des plants: " + response.statusCode());
+            throw new IOException("Error during plant retrieval:" + response.statusCode());
         }
 
         Type listType = new TypeToken<List<RecyclingPlant>>() {}.getType();
@@ -66,7 +66,7 @@ public class PlantServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Not authorized - Invalid token");
         }
 
         if (response.statusCode() == 404) {
@@ -74,7 +74,7 @@ public class PlantServiceClient {
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la récupération de la capacité : " + response.statusCode());
+            throw new IOException("Error retrieving capacity:" + response.statusCode());
         }
 
         return gson.fromJson(response.body(), Integer.class);
@@ -97,7 +97,7 @@ public class PlantServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Unauthorized - ivalide token");
+            throw new IllegalStateException("Unauthorized - invalide token");
         }
 
         if (response.statusCode() == 400) {

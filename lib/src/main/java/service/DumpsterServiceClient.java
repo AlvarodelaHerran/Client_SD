@@ -39,7 +39,7 @@ public class DumpsterServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Not authorized - Token invalid");
         }
 
         if (response.statusCode() == 204) {
@@ -47,7 +47,7 @@ public class DumpsterServiceClient {
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la récupération des dumpsters: " + response.statusCode());
+            throw new IOException("Error retrieving dumpsters:" + response.statusCode());
         }
 
         Dumpster[] dumpsters = gson.fromJson(response.body(), Dumpster[].class);
@@ -69,7 +69,7 @@ public class DumpsterServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Not authorized - Invalid token");
         }
 
         return response.statusCode() == 200;
@@ -89,11 +89,11 @@ public class DumpsterServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Not authorized - Invalid token");
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la création du dumpster: " + response.statusCode());
+            throw new IOException("Error creating dumpster:" + response.statusCode());
         }
 
         return gson.fromJson(response.body(), Dumpster.class);
@@ -115,7 +115,7 @@ public class DumpsterServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Error creating dumpster:");
         }
 
         if (response.statusCode() == 204) {
@@ -123,7 +123,7 @@ public class DumpsterServiceClient {
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la récupération des usages du dumpster: " + response.statusCode());
+            throw new IOException("Error retrieving dumpster usage:" + response.statusCode());
         }
 
         UsageRecord[] records = gson.fromJson(response.body(), UsageRecord[].class);
@@ -146,7 +146,7 @@ public class DumpsterServiceClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 401) {
-            throw new IllegalStateException("Non autorisé - Token invalide");
+            throw new IllegalStateException("Unauthorized - Invalid token");
         }
 
         if (response.statusCode() == 204) {
@@ -154,7 +154,7 @@ public class DumpsterServiceClient {
         }
 
         if (response.statusCode() != 200) {
-            throw new IOException("Erreur lors de la récupération des dumpsters par code postal: " + response.statusCode());
+            throw new IOException("Error retrieving dumpsters by postal code: " + response.statusCode());
         }
 
         Dumpster[] dumpsters = gson.fromJson(response.body(), Dumpster[].class);

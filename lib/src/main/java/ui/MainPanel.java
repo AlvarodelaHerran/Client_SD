@@ -13,38 +13,33 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Frame principal refactorizado para usar controladores
- */
-public class MainFrame extends JFrame {
+public class MainPanel extends JPanel {
 
+    private final MainApplicationFrame parentFrame;
     private final DumpsterController dumpsterController;
     private final AuthController authController;
     
     private JTable tableDumpsters;
     private DefaultTableModel tableModel;
     private JButton btnRefresh;
-    private JPanel statusPanel;
+    private JLabel lblStatus;
     private List<Dumpster> currentDumpsters;
 
-    public MainFrame() {
-        super("Ecoembes - Dumpsters List");
+    public MainPanel(MainApplicationFrame parentFrame) {
+        this.parentFrame = parentFrame;
         
-        // Inicializar controladores
         String baseUrl = "http://localhost:8899";
         this.dumpsterController = new DumpsterController(baseUrl);
         this.authController = new AuthController(baseUrl);
         
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 600);
-        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(0, 0));
+        setBackground(new Color(245, 245, 245));
         
         initUI();
         loadDumpsters();
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
         add(createHeader(), BorderLayout.NORTH);
         add(createDumpstersTable(), BorderLayout.CENTER);
         add(createFooter(), BorderLayout.SOUTH);
@@ -52,26 +47,29 @@ public class MainFrame extends JFrame {
 
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout(10, 0));
-        header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        header.setBackground(new Color(66, 133, 244));
+        header.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
         
         // Usuario actual
         String userEmail = authController.getCurrentUserEmail();
-        JLabel lblUser = new JLabel("👤 Conectado: " + userEmail);
-        lblUser.setFont(new Font("Arial", Font.BOLD, 12));
+        JLabel lblUser = new JLabel("👤 " + userEmail);
+        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblUser.setForeground(Color.WHITE);
         header.add(lblUser, BorderLayout.WEST);
 
         // Panel de botones
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        buttonPanel.setOpaque(false);
         
-        btnRefresh = new JButton("🔄 Refrescar");
+        btnRefresh = createHeaderButton("🔄 Refresh");
         btnRefresh.addActionListener(e -> loadDumpsters());
         buttonPanel.add(btnRefresh);
         
-        JButton btnManage = new JButton("Gestionar Dumpsters");
-        btnManage.addActionListener(e -> openManagementFrame());
+        JButton btnManage = createHeaderButton("⚙ Management");
+        btnManage.addActionListener(e -> parentFrame.showManagementPanel());
         buttonPanel.add(btnManage);
 
-        JButton btnLogout = new JButton("Cerrar Sesión");
+        JButton btnLogout = createHeaderButton("Log Out");
         btnLogout.addActionListener(e -> handleLogout());
         buttonPanel.add(btnLogout);
 
@@ -79,21 +77,39 @@ public class MainFrame extends JFrame {
         return header;
     }
 
+    private JButton createHeaderButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(new Color(48, 110, 220));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setOpaque(true);
+        return btn;
+    }
+
     private JScrollPane createDumpstersTable() {
-        String[] columns = {"ID", "Ubicación", "Código Postal", "Capacidad", "Llenado", "Porcentaje", "Nivel", "Planta"};
+        String[] columns = {"ID", "Location", "Postal Code", "Capacity", "Fill", "%", "State", "Plant"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 7; // Solo la columna de planta es editable
+                return column == 7;
             }
         };
 
         tableDumpsters = new JTable(tableModel);
         tableDumpsters.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tableDumpsters.setRowHeight(30);
+        tableDumpsters.setRowHeight(32);
+        tableDumpsters.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tableDumpsters.setGridColor(new Color(220, 220, 220));
+        tableDumpsters.setShowGrid(true);
+        tableDumpsters.setIntercellSpacing(new Dimension(1, 1));
         tableDumpsters.getTableHeader().setReorderingAllowed(false);
+        tableDumpsters.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tableDumpsters.getTableHeader().setBackground(new Color(240, 240, 240));
 
-        // Renderer para la columna de nivel (color)
+       
         tableDumpsters.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -109,12 +125,9 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Renderer y Editor para la columna de planta
         setupPlantColumn();
-
         tableDumpsters.setRowSorter(new TableRowSorter<>(tableModel));
 
-        // Doble clic para ver detalles
         tableDumpsters.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -124,29 +137,35 @@ public class MainFrame extends JFrame {
             }
         });
 
-        return new JScrollPane(tableDumpsters);
+        JScrollPane scrollPane = new JScrollPane(tableDumpsters);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        return scrollPane;
     }
 
     private void setupPlantColumn() {
-        // Renderer para mostrar planta asignada o botón
         tableDumpsters.getColumnModel().getColumn(7).setCellRenderer(new TableCellRenderer() {
-            JButton btn = new JButton("Asignar");
+            JButton btn = new JButton("Assign");
 
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, 
                                                            boolean isSelected, boolean hasFocus, 
                                                            int row, int column) {
                 if (value instanceof RecyclingPlant plant) {
-                    return new JLabel(plant.getName());
+                    JLabel lbl = new JLabel(plant.getName());
+                    lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                    return lbl;
                 } else {
+                    btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                    btn.setBackground(new Color(66, 133, 244));
+                    btn.setForeground(Color.WHITE);
+                    btn.setFocusPainted(false);
                     return btn;
                 }
             }
         });
 
-        // Editor para asignar planta
         tableDumpsters.getColumnModel().getColumn(7).setCellEditor(new DefaultCellEditor(new JTextField()) {
-            private JButton btn = new JButton("Asignar");
+            private JButton btn = new JButton("Assign");
             private Dumpster currentDumpster;
 
             {
@@ -167,13 +186,10 @@ public class MainFrame extends JFrame {
             }
 
             private void handlePlantAssignment() {
-            	int selectedRow = tableDumpsters.getSelectedRow();
+                int selectedRow = tableDumpsters.getSelectedRow();
                 if (selectedRow == -1) return;
                 
-                // Guardamos el índice convertido en una nueva variable que NO modificaremos después
-                // Esto la hace "effectively final"
                 int modelRow = tableDumpsters.convertRowIndexToModel(selectedRow);
-                
                 currentDumpster = currentDumpsters.get(modelRow);
 
                 SwingWorker<List<RecyclingPlant>, Void> worker = new SwingWorker<>() {
@@ -188,8 +204,8 @@ public class MainFrame extends JFrame {
                             List<RecyclingPlant> plants = get();
                             
                             if (plants.isEmpty()) {
-                                JOptionPane.showMessageDialog(MainFrame.this, 
-                                    "No hay plantas de reciclaje disponibles", 
+                                JOptionPane.showMessageDialog(MainPanel.this, 
+                                    "There are no recycling plants available", 
                                     "Info", 
                                     JOptionPane.INFORMATION_MESSAGE);
                                 fireEditingStopped();
@@ -198,7 +214,7 @@ public class MainFrame extends JFrame {
 
                             showPlantSelectionDialog(plants, currentDumpster, modelRow);
                         } catch (Exception ex) {
-                            showError("Error al cargar plantas", ex);
+                            showError("Error loading plants", ex);
                         }
                     }
                 };
@@ -208,7 +224,6 @@ public class MainFrame extends JFrame {
     }
 
     private void showPlantSelectionDialog(List<RecyclingPlant> plants, Dumpster dumpster, int modelRow) {
-        // Obtener capacidades de forma asíncrona
         SwingWorker<String[], Void> worker = new SwingWorker<>() {
             @Override
             protected String[] doInBackground() throws Exception {
@@ -229,9 +244,9 @@ public class MainFrame extends JFrame {
                     String[] plantChoices = get();
                     
                     String selectedEntry = (String) JOptionPane.showInputDialog(
-                        MainFrame.this,
-                        "Seleccione planta de reciclaje para Dumpster #" + dumpster.getId(),
-                        "Asignar Planta", 
+                        MainPanel.this,
+                        "Select recycling plant for Dumpster #" + dumpster.getId(),
+                        "Assign Plant", 
                         JOptionPane.PLAIN_MESSAGE, 
                         null,
                         plantChoices, 
@@ -243,7 +258,7 @@ public class MainFrame extends JFrame {
                         assignPlantToDumpster(dumpster, selectedPlantName, plants, modelRow);
                     }
                 } catch (Exception ex) {
-                    showError("Error al mostrar diálogo", ex);
+                    showError("Error displaying dialog", ex);
                 }
             }
         };
@@ -274,15 +289,15 @@ public class MainFrame extends JFrame {
                             tableDumpsters.setValueAt(selectedPlant, modelRow, 7);
                         }
                         
-                        JOptionPane.showMessageDialog(MainFrame.this, 
-                            "Planta asignada correctamente",
-                            "Éxito",
+                        JOptionPane.showMessageDialog(MainPanel.this, 
+                            "Plant correctly assigned",
+                            "Success",
                             JOptionPane.INFORMATION_MESSAGE);
                         
-                        loadDumpsters(); // Recargar para mostrar cambios
+                        loadDumpsters();
                     }
                 } catch (Exception ex) {
-                    showError("Error al asignar planta", ex);
+                    showError("Error assigning plant", ex);
                 }
             }
         };
@@ -291,44 +306,41 @@ public class MainFrame extends JFrame {
 
     private JPanel createFooter() {
         JPanel footer = new JPanel(new BorderLayout());
-        footer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        footer.setBackground(new Color(250, 250, 250));
+        footer.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
 
-        // Panel de estado
-        statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("Listo"));
-        footer.add(statusPanel, BorderLayout.WEST);
+        lblStatus = new JLabel("Ready");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(new Color(100, 100, 100));
+        footer.add(lblStatus, BorderLayout.WEST);
 
-        // Leyenda de colores
-        JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        legend.setOpaque(false);
         
-        JLabel lblGreen = new JLabel(" Bajo ");
-        lblGreen.setOpaque(true);
-        lblGreen.setBackground(new Color(76, 175, 80));
-        lblGreen.setForeground(Color.WHITE);
-        lblGreen.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-        legend.add(lblGreen);
-
-        JLabel lblOrange = new JLabel(" Medio ");
-        lblOrange.setOpaque(true);
-        lblOrange.setBackground(new Color(255, 152, 0));
-        lblOrange.setForeground(Color.WHITE);
-        lblOrange.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-        legend.add(lblOrange);
-
-        JLabel lblRed = new JLabel(" Lleno ");
-        lblRed.setOpaque(true);
-        lblRed.setBackground(new Color(244, 67, 54));
-        lblRed.setForeground(Color.WHITE);
-        lblRed.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-        legend.add(lblRed);
+        legend.add(createLegendLabel("Low", new Color(76, 175, 80)));
+        legend.add(createLegendLabel("Medium", new Color(255, 152, 0)));
+        legend.add(createLegendLabel("Full", new Color(244, 67, 54)));
 
         footer.add(legend, BorderLayout.EAST);
         return footer;
     }
 
+    private JLabel createLegendLabel(String text, Color color) {
+        JLabel lbl = new JLabel(" " + text + " ");
+        lbl.setOpaque(true);
+        lbl.setBackground(color);
+        lbl.setForeground(Color.WHITE);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lbl.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+        return lbl;
+    }
+
     private void loadDumpsters() {
         setButtonsEnabled(false);
-        updateStatus("Cargando dumpsters...");
+        updateStatus("Loading...");
 
         SwingWorker<List<Dumpster>, Void> worker = new SwingWorker<>() {
             @Override
@@ -342,10 +354,10 @@ public class MainFrame extends JFrame {
                     List<Dumpster> dumpsters = get();
                     currentDumpsters = dumpsters;
                     displayDumpsters(dumpsters);
-                    updateStatus("✓ Cargados " + dumpsters.size() + " dumpsters");
+                    updateStatus("✓ " + dumpsters.size() + " dumpsters");
                 } catch (Exception ex) {
-                    showError("Error al cargar dumpsters", ex);
-                    updateStatus("Error al cargar datos");
+                    showError("Error loading dumpsters", ex);
+                    updateStatus("Error");
                 } finally {
                     setButtonsEnabled(true);
                 }
@@ -364,7 +376,7 @@ public class MainFrame extends JFrame {
                 d.getCapacity() + " L",
                 d.getCurrentFill() + " L",
                 String.format("%.1f%%", d.getFillPercentage()),
-                null, // Columna de nivel (se renderiza con color)
+                null,
                 d.getAssignedPlant() != null ? d.getAssignedPlant() : null
             });
         }
@@ -378,41 +390,35 @@ public class MainFrame extends JFrame {
         Dumpster d = currentDumpsters.get(row);
         
         String details = String.format(
-            "ID: %d\n" +
-            "Ubicación: %s\n" +
-            "Código Postal: %d\n" +
-            "Capacidad: %d L\n" +
-            "Llenado actual: %d L\n" +
-            "Porcentaje: %.1f%%\n" +
-            "Planta asignada: %s",
+    		"ID: %d\n" +
+			"Location: %s\n" +
+			"Postal Code: %d\n" +
+			"Capacity: %d L\n" +
+			"Current Fill: %d L\n" +
+			"Percentage: %.1f%%\n" +
+			"Assigned Floor: %s",
             d.getId(),
             d.getLocation(),
             d.getPostalCode(),
             d.getCapacity(),
             d.getCurrentFill(),
             d.getFillPercentage(),
-            d.getAssignedPlant() != null ? d.getAssignedPlant().getName() : "Sin asignar"
+            d.getAssignedPlant() != null ? d.getAssignedPlant().getName() : "Unassigned"
         );
         
         JOptionPane.showMessageDialog(
             this,
             details,
-            "Detalles del Dumpster #" + d.getId(),
+            "Dumpster Details #" + d.getId(),
             JOptionPane.INFORMATION_MESSAGE
-        );
-    }
-
-    private void openManagementFrame() {
-        SwingUtilities.invokeLater(() -> 
-            new DumpsterManagementFrame().setVisible(true)
         );
     }
 
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(
             this,
-            "¿Está seguro que desea cerrar sesión?",
-            "Confirmar Logout",
+            "Are you sure you want to log out?"
+            "Confirm Logout"
             JOptionPane.YES_NO_OPTION
         );
 
@@ -427,22 +433,13 @@ public class MainFrame extends JFrame {
                 protected void done() {
                     try {
                         AuthController.LogoutResult result = get();
-                        
-                        // Independientemente del resultado, cerrar sesión localmente
-                        dispose();
-                        SwingUtilities.invokeLater(() -> 
-                            new LoginFrame().setVisible(true)
-                        );
+                        parentFrame.returnToLogin();
                         
                         if (!result.isSuccess()) {
-                            System.err.println("Advertencia: " + result.getMessage());
+                            System.err.println("Warning: " + result.getMessage());
                         }
                     } catch (Exception ex) {
-                        // Aún así cerrar sesión localmente
-                        dispose();
-                        SwingUtilities.invokeLater(() -> 
-                            new LoginFrame().setVisible(true)
-                        );
+                        parentFrame.returnToLogin();
                     }
                 }
             };
@@ -451,10 +448,7 @@ public class MainFrame extends JFrame {
     }
 
     private void updateStatus(String message) {
-        statusPanel.removeAll();
-        statusPanel.add(new JLabel(message));
-        statusPanel.revalidate();
-        statusPanel.repaint();
+        lblStatus.setText(message);
     }
 
     private void setButtonsEnabled(boolean enabled) {
@@ -476,6 +470,6 @@ public class MainFrame extends JFrame {
             JOptionPane.ERROR_MESSAGE
         );
         
-        ex.printStackTrace(); // Para debugging
+        ex.printStackTrace();
     }
 }
