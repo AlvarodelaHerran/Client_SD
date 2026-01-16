@@ -1,6 +1,7 @@
 package ui;
 
-import service.AuthServiceClient;
+import controller.AuthController;
+import controller.AuthController.LoginResult;
 import utils.SessionManager;
 import ui.MainFrame;
 
@@ -10,7 +11,7 @@ import java.util.Optional;
 
 public class LoginFrame extends JFrame {
 
-    private final AuthServiceClient authService;
+	private final AuthController authController;
     private final JTextField txtEmail;
     private final JPasswordField txtPassword;
     private final JButton btnLogin;
@@ -18,17 +19,17 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         super("Ecoembes - Login");
 
-        this.authService = new AuthServiceClient("http://localhost:8899");
+        this.authController = new AuthController("http://localhost:8899");
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(350, 200);
         setLocationRelativeTo(null);
         setLayout(new GridLayout(3, 2, 5, 5));
 
-        JLabel lblEmail = new JLabel("Email:");
+        JLabel lblEmail = new JLabel("Email:", SwingConstants.CENTER);
         txtEmail = new JTextField();
 
-        JLabel lblPassword = new JLabel("Password:");
+        JLabel lblPassword = new JLabel("Password:", SwingConstants.CENTER);
         txtPassword = new JPasswordField();
 
         btnLogin = new JButton("Login");
@@ -49,26 +50,26 @@ public class LoginFrame extends JFrame {
         btnLogin.setEnabled(false);
         btnLogin.setText("Connexion...");
 
-        SwingWorker<Optional<String>, Void> worker = new SwingWorker<>() {
+        SwingWorker<LoginResult, Void> worker = new SwingWorker<>() {
             @Override
-            protected Optional<String> doInBackground() throws Exception {
+            protected LoginResult doInBackground() throws Exception {
                 String email = txtEmail.getText().trim();
                 String password = new String(txtPassword.getPassword());
-                return authService.login(email, password);
+                return authController.login(email, password);
             }
 
             @Override
             protected void done() {
                 try {
-                    Optional<String> token = get();
+                	LoginResult result = get();
 
-                    if (token.isPresent()) {
-                        onLoginSuccess(token.get());
+                    if (result.isSuccess()) {
+                        onLoginSuccess();
                     } else {
-                        onLoginFailure("Identifiants invalides");
+                        onLoginFailure(result.getMessage());
                     }
                 } catch (Exception ex) {
-                    onLoginFailure("Erreur: " + ex.getMessage());
+                	onLoginFailure("Error inesperado: " + ex.getMessage());
                 } finally {
                     btnLogin.setEnabled(true);
                     btnLogin.setText("Login");
@@ -79,10 +80,7 @@ public class LoginFrame extends JFrame {
         worker.execute();
     }
 
-    private void onLoginSuccess(String token) {
-        SessionManager.getInstance().setAuthToken(token);
-        SessionManager.getInstance().setUserEmail(txtEmail.getText().trim());
-
+    private void onLoginSuccess() {
         txtPassword.setText("");
 
         openMainWindow();

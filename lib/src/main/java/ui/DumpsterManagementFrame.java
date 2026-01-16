@@ -1,8 +1,8 @@
 package ui;
 
 import model.Dumpster;
-import service.DumpsterServiceClient;
-import utils.SessionManager;
+import controller.DumpsterController;
+import controller.DumpsterController.ControllerException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,7 +10,7 @@ import java.util.List;
 
 public class DumpsterManagementFrame extends JFrame {
 
-    private final DumpsterServiceClient dumpsterService;
+	private final DumpsterController controller;
     private JTextField txtLocation;
     private JTextField txtPostalCode;
     private JTextField txtCapacity;
@@ -22,7 +22,7 @@ public class DumpsterManagementFrame extends JFrame {
 
     public DumpsterManagementFrame() {
         super("Dumpster Management");
-        this.dumpsterService = new DumpsterServiceClient("http://localhost:8899");
+        this.controller = new DumpsterController("http://localhost:8899");
         setSize(1200, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -95,7 +95,7 @@ public class DumpsterManagementFrame extends JFrame {
         SwingWorker<List<Dumpster>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<Dumpster> doInBackground() throws Exception {
-                return dumpsterService.getAllDumpsters(SessionManager.getInstance().getAuthToken());
+                return controller.getAllDumpsters();
             }
 
             @Override
@@ -128,12 +128,12 @@ public class DumpsterManagementFrame extends JFrame {
     private void createDumpster() {
         try {
             String location = txtLocation.getText();
-            int postal = Integer.parseInt(txtPostalCode.getText());
+            int postalCode = Integer.parseInt(txtPostalCode.getText());
             int capacity = Integer.parseInt(txtCapacity.getText());
             int currentFill = Integer.parseInt(txtCurrentFill.getText());
 
-            Dumpster dumpster = new Dumpster(null, location, postal, capacity, currentFill, null, null);
-            Dumpster created = dumpsterService.createDumpster(dumpster, SessionManager.getInstance().getAuthToken());
+            Dumpster created = controller.createDumpster(location, postalCode, capacity, currentFill);
+            
             JOptionPane.showMessageDialog(this, "Dumpster created with ID: " + created.getId());
             loadDumpsters();
         } catch (Exception e) {
@@ -149,7 +149,7 @@ public class DumpsterManagementFrame extends JFrame {
         }
         try {
             int currentFill = Integer.parseInt(txtCurrentFill.getText());
-            boolean success = dumpsterService.updateDumpsterInfo(selected.getId(), currentFill, SessionManager.getInstance().getAuthToken());
+            boolean success = controller.updateDumpsterFill(selected.getId(), currentFill);
             if (success) {
                 JOptionPane.showMessageDialog(this, "Dumpster updated successfully");
                 loadDumpsters();
