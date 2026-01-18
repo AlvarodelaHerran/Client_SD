@@ -417,8 +417,8 @@ public class MainPanel extends JPanel {
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(
             this,
-            "Are you sure you want to log out?"
-            "Confirm Logout"
+            "Are you sure you want to log out?",
+            "Confirm Logout",
             JOptionPane.YES_NO_OPTION
         );
 
@@ -446,6 +446,7 @@ public class MainPanel extends JPanel {
             worker.execute();
         }
     }
+
 
     private void updateStatus(String message) {
         lblStatus.setText(message);
